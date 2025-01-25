@@ -1,0 +1,6 @@
+name = banco_2
+name = ejemplo
+name = pago_banco_1
+name = mi_claro_detalles
+name = flow_recibo
+name = factura_tigo

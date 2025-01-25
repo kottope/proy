@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Proyectos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-300 font-sans min-h-screen">
+    <div class="max-w-3xl mx-auto px-4 py-8">
+        <header class="text-center mb-12 space-y-4">
+            <h1 class="text-3xl font-light text-gray-100">
+                <span class="font-medium text-blue-400">Proyectos</span> Disponibles
+            </h1>
+            <p class="text-gray-400">Selecciona un proyecto para ver detalles</p>
+        </header>
+
+        <div id="loading" class="text-center space-y-4">
+            <div class="animate-pulse flex flex-col items-center">
+                <div class="h-12 w-12 bg-gray-700 rounded-full mb-4"></div>
+                <div class="h-4 bg-gray-700 rounded w-1/4"></div>
+            </div>
+        </div>
+
+        <div id="error-message" class="hidden p-4 text-center bg-red-900/20 rounded-xl text-red-400 font-medium max-w-md mx-auto">
+            ⚠️ Error al cargar proyectos
+        </div>
+
+        <ul id="project-list" class="space-y-4"></ul>
+    </div>
+
+    <script>
+        const projectList = document.getElementById("project-list");
+        const loadingMessage = document.getElementById("loading");
+        const errorMessage = document.getElementById("error-message");
+        const emojis = ["📁", "📂", "🗂️", "📝", "🎨", "🛠️", "🔧", "🌐", "🖥️", "📱"];
+
+        async function verifyProject(projectPath) {
+            try {
+                const response = await fetch(`./${projectPath}/index.html`, { method: "HEAD" });
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const response = await fetch('./proyectos.txt');
+                if (!response.ok) throw new Error('Archivo no encontrado');
+                const textData = await response.text();
+
+                const projects = textData
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.startsWith('name = '))
+                    .map(line => {
+                        const name = line.replace('name = ', '').trim();
+                        return {
+                            name: name,
+                            path: name.toLowerCase().replace(/\s+/g, '-'),
+                            icon: emojis[Math.floor(Math.random() * emojis.length)]
+                        };
+                    });
+
+                const validProjects = [];
+
+                for (const project of projects) {
+                    const exists = await verifyProject(project.path);
+                    if (exists) validProjects.push(project);
+                }
+
+                loadingMessage.style.display = "none";
+
+                if (validProjects.length > 0) {
+                    validProjects.forEach(project => {
+                        const listItem = document.createElement("li");
+                        listItem.className = "bg-gray-800/50 hover:bg-gray-800 rounded-lg p-4 transition-colors border border-gray-700/50";
+                        listItem.innerHTML = `
+                            <a href="./${project.path}/" class="flex items-start space-x-4">
+                                <span class="text-2xl p-2 rounded-md bg-gray-700/50">${project.icon}</span>
+                                <div>
+                                    <h3 class="text-gray-100 font-medium">${project.name}</h3>
+                                    <p class="text-sm text-gray-400 font-mono mt-1">/${project.path}/</p>
+                                </div>
+                            </a>
+                        `;
+                        projectList.appendChild(listItem);
+                    });
+                } else {
+                    errorMessage.textContent = "⚠️ No se encontraron proyectos";
+                    errorMessage.classList.remove("hidden");
+                }
+            } catch (error) {
+                loadingMessage.style.display = "none";
+                errorMessage.textContent = `⚠️ Error: ${error.message}`;
+                errorMessage.classList.remove("hidden");
+            }
+        }
+
+        loadProjects();
+    </script>
+</body>
+</html>
